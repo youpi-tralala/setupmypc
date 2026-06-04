@@ -15,7 +15,7 @@ vagrant up --provider=virtualbox
 #VM_IP=$(vagrant ssh -- bash -lc [[ "$(ip -4 addr show enp0s8)" ]] && NIC=enp0s8 || NIC=enp0s3 ; ip -4 addr show $NIC | awk '/inet /{print $2}' | cut -d/ -f1)
 VM_IP=$VM_IP
 
-echo "[create_vm] -- Génération du fichier ssh/config"
+echo "[create_vm] -- Génération du fichier ssh/config.d/vagrant_$VM_NAME"
 cat << EOF > ~/.ssh/config.d/vagrant_"$VM_NAME" 
 Host $VM_NAME
     HostName $VM_IP
