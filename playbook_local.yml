@@ -1,0 +1,31 @@
+---
+- name: Prepare host
+  hosts: localhost
+  gather_facts: no
+  become: yes
+  vars_files:
+    - global_vars.yml
+  tasks:
+    - name: Install packages
+      ansible.builtin.apt:
+        name:
+          - unison
+        state: present
+        update_cache: yes
+    
+    - name: Create unison profile directory
+      ansible.builtin.file:
+        path: /home/{{ SSH_USER }}/.unison
+        state: directory
+        owner: "{{ SSH_USER }}"
+        group: "{{ SSH_USER }}"
+        mode: '0700'
+        
+    - name: Create unison profile
+      ansible.builtin.template:
+        src: unison_profile.prf.j2
+        dest: /home/{{ SSH_USER }}/.unison/home.prf
+        owner: "{{ SSH_USER }}"
+        group: "{{ SSH_USER }}"
+        mode: '0600'
+

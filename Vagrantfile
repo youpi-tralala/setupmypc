@@ -15,8 +15,8 @@ Vagrant.configure('2') do |config|
   config.vm.define VM_NAME
 
   # Windows synced folders
-  config.vm.synced_folder WINDOWS_WORKING_DIR,"/home/#{SSH_USER}/ops",owner: SSH_USER,group: SSH_USER
-  config.vm.synced_folder WINDOWS_SSH_DIR,"/home/#{SSH_USER}/.ssh",owner: SSH_USER,group: SSH_USER, type: "rsync", rsync__auto: true
+  #config.vm.synced_folder WINDOWS_WORKING_DIR,"/home/#{SSH_USER}/ops",owner: SSH_USER,group: SSH_USER
+  #config.vm.synced_folder WINDOWS_SSH_DIR,"/home/#{SSH_USER}/.ssh",owner: SSH_USER,group: SSH_USER, type: "rsync", rsync__auto: true
   # Disable default vagrant synced folder as it is already in ops
   config.vm.synced_folder '.', '/vagrant', disabled: true
 

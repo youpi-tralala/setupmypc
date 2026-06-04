@@ -1,3 +1,4 @@
+---
 - name: Provision coding-vm
   hosts: all
   gather_facts: yes
@@ -41,6 +42,7 @@
           - gnupg
           - software-properties-common
           - curl
+          - unison
         state: present
         update_cache: yes
 
