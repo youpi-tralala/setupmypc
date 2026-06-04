@@ -1,0 +1,87 @@
+- name: Provision coding-vm
+  hosts: all
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: create folders
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0700'
+      loop:
+        - /home/{{ ansible_user }}/.ssh
+        - /home/{{ ansible_user }}/.ssh/config
+        - /home/{{ ansible_user }}/.ssh/config.d
+
+    - name: Install packages
+      ansible.builtin.apt:
+        name:
+          - ansible
+          - docker.io
+          - docker-compose
+          - openssh-client
+          - vim
+          - terminator
+          - curl
+          - wget
+          - locate
+          - git
+          - gpg
+          - ansible
+          - azure-cli
+          - podman
+          - fish
+          - whois
+          - jq
+          - original-awk
+          - yq
+          - tree
+          - gnupg
+          - software-properties-common
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Bypass ZSScaler certificate
+      ansible.builtin.copy:
+        src: zscaler.crt
+        dest: /usr/local/share/ca-certificates/zscaler.crt
+        
+    - name: Update CA certificates
+      ansible.builtin.command: update-ca-certificates
+
+    - name: Add the HashiCorp GPG key
+      ansible.builtin.shell: |
+        wget -O- https://apt.releases.hashicorp.com/gpg | \
+        gpg --dearmor | \
+        sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+    
+    - name: Add HashiCorp repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+        state: present
+        filename: hashicorp.list
+        update_cache: yes
+    
+    - name: Install Terraform
+      ansible.builtin.apt:
+        name: terraform
+        state: present
+        update_cache: yes
+    
+    - name: Set up github SSH connections
+      ansible.builtin.copy:
+        content: |
+          host git-perso
+            hostname github.com
+            User youpi-tralala
+            IdentityFile ~/.ssh/yves@proton
+
+          host github.com
+          	hostname github.com
+            User youpi-tralala
+            IdentityFile ~/.ssh/yves@onepoint
+      
+        dest: /home/{{ ansible_user }}/.ssh/config.d/github
