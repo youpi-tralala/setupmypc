@@ -33,7 +33,6 @@ Vagrant.configure('2') do |config|
   # Provisioning
   config.vm.provision 'shell', inline: <<-SHELL
     set -e
-    apt-get update
     groupadd -f sshusers
 
     if ! id #{SSH_USER} >/dev/null 2>&1; then
@@ -46,6 +45,9 @@ Vagrant.configure('2') do |config|
     echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFJ+DHkaXWSdamF2jik1rU/Qhj9jlH4sfJCnNkbHSvul y.boccuni@groupeonepoint.com" \
       > /home/#{SSH_USER}/.ssh/authorized_keys
     chmod 600 /home/#{SSH_USER}/.ssh/authorized_keys
+
+    for i in $(grep -ril private /home/#{SSH_USER}/.ssh/*); do chmod 600 $i; done
+    for i in /home/#{SSH_USER}/.ssh/*.pub; do chmod 644 $i; done
 
     chown -R #{SSH_USER}:#{SSH_USER} /home/#{SSH_USER}
 

@@ -1,6 +1,9 @@
-VM_NAME: code-vm
-VM_IP: 192.168.56.10
-SSH_USER: yves
-SSH_USER_PRIVATE_KEY_PATH: /home/yves/.ssh/yves@onepoint
-WINDOWS_SSH_DIR: "C:\\Users\\YvesBOCCUNI\\OneDrive\ -\ ONEPOINT\\.ssh"
-WINDOWS_WORKING_DIR: "C:\\Users\\YvesBOCCUNI\\OneDrive\ -\ ONEPOINT\\Bureau\\ops"
+VM_NAME: example_name
+# IP from VBox host-only adapter
+VM_IP: 192.168.00.00
+# Same name WSL <> vagrant VM
+SSH_USER: example_user
+# in WSL
+SSH_USER_PRIVATE_KEY_PATH: /home/example_user/.ssh/id_rsa
+WINDOWS_SSH_DIR: "C:\\Users\\ExampleUser\\.ssh"
+WINDOWS_WORKING_DIR: "C:\\Users\\ExampleUser\\Bureau\\example_dir"
