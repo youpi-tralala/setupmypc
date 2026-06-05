@@ -9,23 +9,34 @@
     - name: Install packages
       ansible.builtin.apt:
         name:
-          - unison
+          - sshfs
         state: present
         update_cache: yes
     
-    - name: Create unison profile directory
+    - name: Create mount point for ops folder
       ansible.builtin.file:
-        path: /home/{{ SSH_USER }}/.unison
+        path: /home/{{ SSH_USER }}/mnt/ops_link
         state: directory
         owner: "{{ SSH_USER }}"
         group: "{{ SSH_USER }}"
-        mode: '0700'
-        
-    - name: Create unison profile
-      ansible.builtin.template:
-        src: unison_profile.prf.j2
-        dest: /home/{{ SSH_USER }}/.unison/home.prf
+        mode: '0755'
+    
+    - name: Set symbolic link for ops
+      ansible.builtin.file:
+        src: /home/{{ SSH_USER }}/mnt/ops_link
+        dest: /home/{{ SSH_USER }}/ops
+        state: link
         owner: "{{ SSH_USER }}"
         group: "{{ SSH_USER }}"
-        mode: '0600'
+        follow: false
 
+    
+    - name: Set SSHFS for ops
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: sshfs#{{ SSH_USER }}@{{ VM_IP }}:/home/{{ SSH_USER }}/ops /home/{{ SSH_USER }}/mnt/ops_link fuse reconnect,IdentityFile={{ SSH_USER_PRIVATE_KEY_PATH }},_netdev,user 0 0
+
+    - name: Set vm auto-start
+      ansible.builtin.lineinfile:
+        path: "/mnt/c/Users/YvesBOCCUNI/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/start_debian_vbox.bat"
+        line: "C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe\" startvm {{ VM_NAME }} --type headless"

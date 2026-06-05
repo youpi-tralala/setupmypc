@@ -42,7 +42,6 @@
           - gnupg
           - software-properties-common
           - curl
-          - unison
         state: present
         update_cache: yes
 

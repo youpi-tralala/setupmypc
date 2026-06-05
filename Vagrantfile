@@ -6,6 +6,7 @@ VM_NAME             = GLOBAL_VARS.fetch('VM_NAME')
 SSH_USER            = GLOBAL_VARS.fetch('SSH_USER')
 WINDOWS_SSH_DIR     = GLOBAL_VARS.fetch('WINDOWS_SSH_DIR')
 WINDOWS_WORKING_DIR = GLOBAL_VARS.fetch('WINDOWS_WORKING_DIR')
+WINDOWS_C_DIR       = GLOBAL_VARS.fetch('WINDOWS_C_DIR')
 
   # Basic configuration
 Vagrant.configure('2') do |config|
@@ -15,8 +16,10 @@ Vagrant.configure('2') do |config|
   config.vm.define VM_NAME
 
   # Windows synced folders
-  #config.vm.synced_folder WINDOWS_WORKING_DIR,"/home/#{SSH_USER}/ops",owner: SSH_USER,group: SSH_USER
-  #config.vm.synced_folder WINDOWS_SSH_DIR,"/home/#{SSH_USER}/.ssh",owner: SSH_USER,group: SSH_USER, type: "rsync", rsync__auto: true
+  config.vm.synced_folder WINDOWS_C_DIR,"/home/#{SSH_USER}/c_drive",owner: SSH_USER,group: SSH_USER
+  config.vm.synced_folder WINDOWS_WORKING_DIR,"/home/#{SSH_USER}/ops",owner: SSH_USER,group: SSH_USER
+  config.vm.synced_folder WINDOWS_SSH_DIR,"/home/#{SSH_USER}/.ssh", owner: SSH_USER,group: SSH_USER, type: "rsync"
+  
   # Disable default vagrant synced folder as it is already in ops
   config.vm.synced_folder '.', '/vagrant', disabled: true
 
@@ -33,22 +36,18 @@ Vagrant.configure('2') do |config|
   # Provisioning
   config.vm.provision 'shell', inline: <<-SHELL
     set -e
-    groupadd -f sshusers
 
-    if ! id #{SSH_USER} >/dev/null 2>&1; then
-      useradd -m -s /bin/bash -G sshusers,sudo #{SSH_USER}
-    fi
+    groupadd -f sshusers
+    if ! (cat /etc/passwd | grep #{SSH_USER}) > /dev/null ; then 
+    useradd -m -s /bin/bash -G sshusers,sudo #{SSH_USER} ; fi
 
     mkdir -p /home/#{SSH_USER}/.ssh
     chmod 700 /home/#{SSH_USER}/.ssh
-
     echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFJ+DHkaXWSdamF2jik1rU/Qhj9jlH4sfJCnNkbHSvul y.boccuni@groupeonepoint.com" \
       > /home/#{SSH_USER}/.ssh/authorized_keys
     chmod 600 /home/#{SSH_USER}/.ssh/authorized_keys
-
     for i in $(grep -ril private /home/#{SSH_USER}/.ssh/*); do chmod 600 $i; done
     for i in /home/#{SSH_USER}/.ssh/*.pub; do chmod 644 $i; done
-
     chown -R #{SSH_USER}:#{SSH_USER} /home/#{SSH_USER}
 
     echo "#{SSH_USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/#{SSH_USER}
