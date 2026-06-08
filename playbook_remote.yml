@@ -36,6 +36,7 @@
     - name: Install packages (1/2)
       ansible.builtin.apt:
         name:
+          - ansible
           - curl
           - docker
           - fish
@@ -94,16 +95,9 @@
         owner: "{{ SSH_USER }}"
         group: "{{ SSH_USER }}"
         mode: '0644'
-    
-#    - name: Configure line ending as LF for git
-#      ansible.builtin.git_config:
-#        name: core.autocrlf
-#        scope: global
-#        value: false
 
     - name: Configure line ending as LF for git
       ansible.builtin.shell: git config --global core.autocrlf false
-
     
 # Zscaler
     - name: Bypass ZSScaler certificate

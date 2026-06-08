@@ -85,3 +85,6 @@ flowchart LR
   class RUN,WRAP,ANS_HOST,ANS_REMOTE,VARS,INV,SSHCFG wsl;
   class CODEVM,PKG,CERT,REPOS,OPSMNT,CDRV vm;
 ```
+
+## todo
+set vscode config
