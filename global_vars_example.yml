@@ -7,3 +7,5 @@ SSH_USER: example_user
 SSH_USER_PRIVATE_KEY_PATH: /home/example_user/.ssh/id_rsa
 WINDOWS_SSH_DIR: "C:\\Users\\ExampleUser\\.ssh"
 WINDOWS_WORKING_DIR: "C:\\Users\\ExampleUser\\Bureau\\example_dir"
+WINDOWS_C_DIR: "C:\\"
+WINDOWS_HOME_DIR_IN_WSL: "/mnt/c/Users/ExampleUser"

@@ -6,6 +6,7 @@
   vars_files:
     - global_vars.yml
   tasks:
+  # Files and folders
     - name: create folders
       ansible.builtin.file:
         path: "{{ item }}"
@@ -16,43 +17,74 @@
       loop:
         - /home/{{ SSH_USER }}/.ssh/config.d
 
-    - name: Install packages
+# First set of paquet
+
+    - name: Wait for apt lock to be released
+      ansible.builtin.wait_for:
+        path: /var/lib/dpkg/lock-frontend
+        state: absent
+        timeout: 600
+
+    - name: Install packages (1/2)
       ansible.builtin.apt:
         name:
-          - ansible
-          - docker.io
-          - docker-compose
-          - openssh-client
-          - vim
-          - terminator
           - curl
-          - wget
-          - locate
-          - git
-          - gpg
-          - ansible
-          - azure-cli
-          - podman
+          - docker
           - fish
-          - whois
-          - jq
-          - original-awk
-          - yq
-          - tree
+          - git
           - gnupg
+          - gpg
+          - jq
+          - locate
+          - openssh-client
+          - original-awk
+          - podman
           - software-properties-common
-          - curl
+          - terminator
+          - tree
+          - vim
+          - wget
+          - whois
+          - yq
         state: present
         update_cache: yes
 
+    - name: Install Az-Cli
+      ansible.builtin.shell: |
+        curl -fsSL 'https://azurecliprod.blob.core.windows.net/$root/deb_install.sh' | sudo bash
+# SSH
+    - name: Copy SSH_USER private key
+      ansible.builtin.copy:
+        src: "{{ SSH_USER_PRIVATE_KEY_PATH }}"
+        dest: /home/{{ SSH_USER }}/.ssh/
+        owner: "{{ SSH_USER }}"
+        group: "{{ SSH_USER }}"
+        mode: '0600'
+
+    - name: Set up github SSH connections
+      ansible.builtin.copy:
+        content: |
+          host git-perso
+            hostname github.com
+            User youpi-tralala
+            IdentityFile ~/.ssh/yves@proton
+
+          host github.com
+          	hostname github.com
+            User youpi-tralala
+            IdentityFile ~/.ssh/yves@onepoint      
+        dest: /home/{{ SSH_USER }}/.ssh/config.d/github
+
+# Zscaler
     - name: Bypass ZSScaler certificate
       ansible.builtin.copy:
         src: zscaler.crt
         dest: /usr/local/share/ca-certificates/zscaler.crt
-        
+        owner: root
     - name: Update CA certificates
       ansible.builtin.command: update-ca-certificates
-
+      
+# Add Terraform repo
     - name: Add the HashiCorp GPG key
       ansible.builtin.shell: |
         wget -O- https://apt.releases.hashicorp.com/gpg | \
@@ -63,35 +95,20 @@
       ansible.builtin.apt_repository:
         repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
         state: present
-        filename: hashicorp.list
-        update_cache: yes
-    
-    - name: Install Terraform
+        filename: hashicorp
+
+# Add Powershell repo
+    - name: Add Microsoft GPG key
+      ansible.builtin.shell: |
+        wget -q https://packages.microsoft.com/config/{{ ansible_distribution | lower }}/{{ ansible_distribution_major_version }}/packages-microsoft-prod.deb
+        dpkg -i packages-microsoft-prod.deb
+        rm packages-microsoft-prod.deb
+
+# Second  set of paquets
+    - name: Install packages (2/2)
       ansible.builtin.apt:
-        name: terraform
+        name:
+          - powershell
+          - terraform
         state: present
         update_cache: yes
-
-# Not necessary as ssh folder is mapped from the vagrantfile, but better keep it 
-#    - name: copy .ssh folder
-#      ansible.builtin.copy:
-#        src: /home/{{ SSH_USER }}/.ssh/
-#        dest: /home/{{ SSH_USER }}/.ssh/
-#        owner: "{{ SSH_USER }}"
-#        group: "{{ SSH_USER }}"
-#    
-#
-#    - name: Set up github SSH connections
-#      ansible.builtin.copy:
-#        content: |
-#          host git-perso
-#            hostname github.com
-#            User youpi-tralala
-#            IdentityFile ~/.ssh/yves@proton
-#
-#          host github.com
-#          	hostname github.com
-#            User youpi-tralala
-#            IdentityFile ~/.ssh/yves@onepoint
-#      
-#        dest: /home/{{ SSH_USER }}/.ssh/config.d/github

@@ -1,0 +1,51 @@
+---
+- name: Prepare Windows host
+  hosts: localhost
+  gather_facts: no
+  become: yes
+  vars_files:
+    - global_vars.yml
+  tasks:
+
+    - name: Set VM auto-start
+      ansible.builtin.lineinfile:
+        path: "{{ WINDOWS_HOME_DIR_IN_WSL }}/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/start_debian_vbox.bat"
+        #ath: "{{ startup_dir.stdout }}/start_debian_vbox.bat"
+        line: "\"C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe\" startvm {{ VM_NAME }} --type headless"
+        create: yes
+    
+    - name: Ensure SSH config directory exists
+      ansible.builtin.file:
+        path: "~/.ssh/config.d"
+        state: directory
+        mode: '0700'
+    
+    - name: Ensur ocnfig.d is included in SSH config
+      ansible.builtin.lineinfile: 
+        path: "~/.ssh/config"
+        line: "Include config.d/*"
+        create: yes
+
+    - name: Create SSH config for VM
+      ansible.builtin.copy:
+        dest: "~/.ssh/config.d/vagrant_{{ VM_NAME }}"
+        content: |
+          Host {{ VM_NAME }}
+              HostName {{ VM_IP }}
+              User {{ SSH_USER }}
+              IdentityFile {{ SSH_USER_PRIVATE_KEY_PATH }}
+              IdentitiesOnly yes
+              StrictHostKeyChecking no
+    
+    - name: Generate Ansible inventory file
+      ansible.builtin.copy:
+          dest: "inventory.ini"
+          content: |
+            [all:vars]
+            ansible_user={{ SSH_USER }}
+            ansible_ssh_private_key_file={{ SSH_USER_PRIVATE_KEY_PATH }}
+            ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+            
+            [ALL]
+            {{ VM_NAME }} ansible_host={{ VM_IP }}
+
