@@ -16,14 +16,22 @@
         mode: '0700'
       loop:
         - /home/{{ SSH_USER }}/.ssh/config.d
+        - /home/{{ SSH_USER }}/config
+
+    - name : Create empty .gitconfig
+      ansible.builtin.file:
+        path: /home/{{ SSH_USER }}/.gitconfig
+        state: touch
+        owner: "{{ SSH_USER }}"
+        group: "{{ SSH_USER }}"
+        mode: '0644'
 
 # First set of paquet
 
-    - name: Wait for apt lock to be released
-      ansible.builtin.wait_for:
+    - name: Remove apt lock
+      ansible.builtin.file:
         path: /var/lib/dpkg/lock-frontend
         state: absent
-        timeout: 600
 
     - name: Install packages (1/2)
       ansible.builtin.apt:
@@ -60,6 +68,15 @@
         owner: "{{ SSH_USER }}"
         group: "{{ SSH_USER }}"
         mode: '0600'
+    
+    - name: Include config.d in ssh config
+      ansible.builtin.lineinfile: 
+        path: /home/{{ SSH_USER }}/.ssh/config
+        line: "Include config.d/*"
+        create: yes
+        owner: "{{ SSH_USER }}"
+        group: "{{ SSH_USER }}"
+        mode: '0644'
 
     - name: Set up github SSH connections
       ansible.builtin.copy:
@@ -74,13 +91,28 @@
             User youpi-tralala
             IdentityFile ~/.ssh/yves@onepoint      
         dest: /home/{{ SSH_USER }}/.ssh/config.d/github
+        owner: "{{ SSH_USER }}"
+        group: "{{ SSH_USER }}"
+        mode: '0644'
+    
+#    - name: Configure line ending as LF for git
+#      ansible.builtin.git_config:
+#        name: core.autocrlf
+#        scope: global
+#        value: false
 
+    - name: Configure line ending as LF for git
+      ansible.builtin.shell: git config --global core.autocrlf false
+
+    
 # Zscaler
     - name: Bypass ZSScaler certificate
       ansible.builtin.copy:
         src: zscaler.crt
         dest: /usr/local/share/ca-certificates/zscaler.crt
         owner: root
+        group: root
+        mode: '0644'
     - name: Update CA certificates
       ansible.builtin.command: update-ca-certificates
       
