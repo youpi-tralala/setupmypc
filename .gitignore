@@ -1,3 +1,4 @@
 .vagrant/*
 inventory.ini
 global_vars.yml
+zscaler.crt
