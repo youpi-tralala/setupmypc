@@ -1,19 +1,19 @@
 # setupmypc
 
-Windows is lame but I have to use it so... this repo aim at setting up a debian vagrant box to code from.
+Windows is lame but I have no choice but to use it, so... this repo aims at setting up a debian vagrant box to code from.
 
 ## prerequisites are
 
-- WSL has to be set up (see dedicated file for that)
-- vagrant and oracle vbox needs to be installed
+- WSL has to be set up [see dedicated file for that](./configure_wsl.md)
+- vagrant and oracle vbox needs to be installed in windows
 
 ## then
 
 - vagrant box (debian bookworm) is pulled
-- vm is created with vars from *global_vars.yml*
+- vm is created with vars from [*global_vars.yml*](./global_vars.yml)
   - network is *vbox host only* (for some reason bridged network was a pain in the glass to setup)
-- *ops* folder is shared with vm
-- ansible set it up
+- *ops* (working_dir) and *C:\\* (as */mnt/c*) folder is shared with vm
+- ansible set evrything else up
 
 ## Stupid things windows (and corporate restraictions) make me do
 

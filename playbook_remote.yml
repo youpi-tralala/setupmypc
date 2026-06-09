@@ -7,7 +7,7 @@
     - global_vars.yml
   tasks:
   # Files and folders
-    - name: create folders
+    - name: create folders owned by SSH_USER
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -16,8 +16,19 @@
         mode: '0700'
       loop:
         - /home/{{ SSH_USER }}/.ssh/config.d
-        - /home/{{ SSH_USER }}/config
+        - /home/{{ SSH_USER }}/.config
+        - /home/{{ SSH_USER }}/bin
 
+    - name: Create folder available system wide
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - /opt/nvim
+        
     - name : Create empty .gitconfig
       ansible.builtin.file:
         path: /home/{{ SSH_USER }}/.gitconfig
@@ -27,7 +38,6 @@
         mode: '0644'
 
 # First set of paquet
-
     - name: Remove apt lock
       ansible.builtin.file:
         path: /var/lib/dpkg/lock-frontend
@@ -38,29 +48,49 @@
         name:
           - ansible
           - curl
-          - docker
+          - docker.io
           - fish
           - git
           - gnupg
           - gpg
           - jq
+          - libfuse2 # Required for AppImage to work
           - locate
+          - nodejs
+          - npm
           - openssh-client
           - original-awk
           - podman
-          - software-properties-common
+          - software-properties-common # Required for ansible apt_repository module
           - terminator
           - tree
           - vim
           - wget
           - whois
           - yq
+
         state: present
-        update_cache: yes
+        #update_cache: yes
 
     - name: Install Az-Cli
       ansible.builtin.shell: |
-        curl -fsSL 'https://azurecliprod.blob.core.windows.net/$root/deb_install.sh' | sudo bash
+        curl -fsSL 'https://azurecliprod.blob.core.windows.net/$root/deb_install.sh' | bash
+
+    - name: install npm packages
+      ansible.builtin.npm:
+        name: "{{ item }}"
+        global: yes
+      loop:
+        - npm-check-updates
+        - bash-language-server
+# .bashrc
+    - name: Copy bashrc
+      ansible.builtin.copy:
+        src: config_files/bashrc
+        dest: /home/{{ SSH_USER }}/.bashrc
+        owner: "{{ SSH_USER }}"
+        group: "{{ SSH_USER }}"
+        mode: '0644'
 # SSH
     - name: Copy SSH_USER private key
       ansible.builtin.copy:
@@ -137,4 +167,26 @@
           - powershell
           - terraform
         state: present
-        update_cache: yes
+        #update_cache: yes
+
+# NeoVim 
+    - name: Download Neovim AppImage (stable)
+      ansible.builtin.get_url:
+        url: https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.appimage
+        dest: /opt/nvim/nvim-linux-x86_64.appimage
+        mode: '0755'
+
+    - name: Create /usr/local/bin/nvim symlink
+      ansible.builtin.file:
+        src: /opt/nvim/nvim-linux-x86_64.appimage
+        dest: /usr/local/bin/nvim
+        state: link
+        force: true
+
+    - name: Copy NeoVim configuration
+      ansible.builtin.copy:
+        src: config_files/init.lua
+        dest: /home/{{ SSH_USER }}/.config/nvim/init.lua
+        owner: "{{ SSH_USER }}"
+        group: "{{ SSH_USER }}"
+        mode: '0644'
