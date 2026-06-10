@@ -36,6 +36,9 @@ require("packer").startup(function(use)
   use "hrsh7th/cmp-buffer"
   use "hrsh7th/cmp-path"
 
+  -- Theme (Monokai / VS Code-like)
+  use "sainnhe/sonokai"
+
   if packer_bootstrap then
     require("packer").sync()
   end
@@ -75,3 +78,28 @@ vim.lsp.config("bashls", {
 })
 
 vim.lsp.enable("bashls")
+
+-------------------------------------------------
+-- UI / Colors (Monokai VS Code-like)
+-------------------------------------------------
+vim.o.termguicolors = true
+vim.o.background = "dark"
+
+vim.o.cursorline = true
+vim.o.signcolumn = "yes"
+vim.o.number = true
+vim.o.relativenumber = false
+
+-- Sonokai configuration
+vim.g.sonokai_style = "default"
+vim.g.sonokai_better_performance = 1
+vim.g.sonokai_enable_italic = 1
+
+-- Appliquer le thème de façon sûre (support bootstrap)
+local ok, _ = pcall(vim.cmd, "colorscheme sonokai")
+if not ok then
+  vim.notify(
+    "Colorscheme 'sonokai' non disponible (exécuter :PackerSync)",
+    vim.log.levels.WARN
+  )
+end

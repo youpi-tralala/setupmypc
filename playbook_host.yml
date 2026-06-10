@@ -48,4 +48,4 @@
             
             [ALL]
             {{ VM_NAME }} ansible_host={{ VM_IP }}
-
+          

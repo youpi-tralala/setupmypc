@@ -6,7 +6,7 @@
   vars_files:
     - global_vars.yml
   tasks:
-  # Files and folders
+# Files and folders
     - name: create folders owned by SSH_USER
       ansible.builtin.file:
         path: "{{ item }}"
@@ -28,6 +28,7 @@
         mode: '0755'
       loop:
         - /opt/nvim
+        - /etc/xdg/nvim
         
     - name : Create empty .gitconfig
       ansible.builtin.file:
@@ -37,7 +38,7 @@
         group: "{{ SSH_USER }}"
         mode: '0644'
 
-# First set of paquet
+# First set of packages
     - name: Remove apt lock
       ansible.builtin.file:
         path: /var/lib/dpkg/lock-frontend
@@ -47,21 +48,23 @@
       ansible.builtin.apt:
         name:
           - ansible
+          - bash
           - curl
           - docker.io
           - fish
           - git
           - gnupg
           - gpg
+          - icdiff
           - jq
-          - libfuse2 # Required for AppImage to work
+          - libfuse2 # Required for AppImage
           - locate
-          - nodejs
-          - npm
+          - nodejs # Required for neovim LSP
+          - npm # Required for neovim LSP
           - openssh-client
           - original-awk
           - podman
-          - software-properties-common # Required for ansible apt_repository module
+          - software-properties-common # Required for ansible
           - terminator
           - tree
           - vim
@@ -83,6 +86,7 @@
       loop:
         - npm-check-updates
         - bash-language-server
+
 # .bashrc
     - name: Copy bashrc
       ansible.builtin.copy:
@@ -91,6 +95,15 @@
         owner: "{{ SSH_USER }}"
         group: "{{ SSH_USER }}"
         mode: '0644'
+    
+    - name: Ensure bashrc sourcing block
+      ansible.builtin.blockinfile:
+        path: /etc/bash.bashrc
+        block: |
+          # source ~/.bashrc upon startup
+          . ~/.bashrc
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+
 # SSH
     - name: Copy SSH_USER private key
       ansible.builtin.copy:
@@ -160,7 +173,7 @@
         dpkg -i packages-microsoft-prod.deb
         rm packages-microsoft-prod.deb
 
-# Second  set of paquets
+# Second set of packages
     - name: Install packages (2/2)
       ansible.builtin.apt:
         name:
@@ -186,7 +199,5 @@
     - name: Copy NeoVim configuration
       ansible.builtin.copy:
         src: config_files/init.lua
-        dest: /home/{{ SSH_USER }}/.config/nvim/init.lua
-        owner: "{{ SSH_USER }}"
-        group: "{{ SSH_USER }}"
+        dest: /etc/xdg/nvim/init.lua
         mode: '0644'
