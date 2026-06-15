@@ -83,7 +83,7 @@ To bypasser Zscaler, its root certificates needs to be in `/usr/local/share/ca-c
 
 ```sh
 apt update -y
-apt install -y openssh-client vim terminator curl wget locate git gpg ansible azure-cli podman fish snapd whois jq original-awk yq tree
+apt install -y openssh-client vim terminator curl wget locate git gpg ansible azure-cli podman fish snapd whois jq original-awk yq tree xauth
 ```
 
 ### Terraform
@@ -161,7 +161,7 @@ configure git config
   git config --global core.autocrlf false
 ```
 
-git config perso
+git config perso example
 >[!NOTE] penser à modifier l'alias `git-perso` dans l'url de origin
 
 ```sh

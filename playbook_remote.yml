@@ -49,6 +49,7 @@
         name:
           - ansible
           - bash
+          - btop
           - curl
           - docker.io
           - fish
@@ -70,6 +71,7 @@
           - vim
           - wget
           - whois
+          - xauth
           - yq
 
         state: present
@@ -122,6 +124,15 @@
         group: "{{ SSH_USER }}"
         mode: '0644'
 
+    - name: Configure SSH /etc/ssh/sshd_config
+      ansible.builtin.lineinfile:
+        dest: /etc/ssh/sshd_config
+        line: "{{ item }}"
+        state: present
+      loop:
+        - X11Forwarding yes
+
+# Git
     - name: Set up github SSH connections
       ansible.builtin.copy:
         content: |
@@ -173,6 +184,23 @@
         dpkg -i packages-microsoft-prod.deb
         rm packages-microsoft-prod.deb
 
+# VSCode
+# <https://code.visualstudio.com/docs/setup/linux>
+    - name: Add Microsoft GPG key for VSCode
+      ansible.builtin.shell: |
+        echo "code code/add-microsoft-repo boolean true" | debconf-set-selections
+
+    - name: Download .deb package for VSCode
+      ansible.builtin.get_url:
+        url: https://go.microsoft.com/fwlink/?LinkID=760868
+        dest: /tmp/vscode.deb
+    
+    - name: Install VSCode
+      ansible.builtin.apt:
+        deb: /tmp/vscode.deb
+        state: present
+        #update_cache: yes
+
 # Second set of packages
     - name: Install packages (2/2)
       ansible.builtin.apt:
@@ -195,6 +223,12 @@
         dest: /usr/local/bin/nvim
         state: link
         force: true
+    
+    - name: Alias Nvim to Vim
+      ansible.builtin.lineinfile:
+        path: /etc/profile.d/aliases.sh
+        line: "alias vim='nvim'"
+        create: yes
 
     - name: Copy NeoVim configuration
       ansible.builtin.copy:

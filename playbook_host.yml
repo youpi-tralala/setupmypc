@@ -36,6 +36,7 @@
               IdentityFile {{ SSH_USER_PRIVATE_KEY_PATH }}
               IdentitiesOnly yes
               StrictHostKeyChecking no
+              ForwardX11 yes
     
     - name: Generate Ansible inventory file
       ansible.builtin.copy:
