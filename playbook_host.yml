@@ -16,19 +16,19 @@
     
     - name: Ensure SSH config directory exists
       ansible.builtin.file:
-        path: "~/.ssh/config.d"
+        path: "{{ WSL_HOME_DIR }}/.ssh/config.d"
         state: directory
         mode: '0700'
     
-    - name: Ensur ocnfig.d is included in SSH config
+    - name: Ensure config.d is included in SSH config
       ansible.builtin.lineinfile: 
-        path: "~/.ssh/config"
+        path: "{{ WSL_HOME_DIR }}/.ssh/config"
         line: "Include config.d/*"
         create: yes
 
     - name: Create SSH config for VM
       ansible.builtin.copy:
-        dest: "~/.ssh/config.d/vagrant_{{ VM_NAME }}"
+        dest: "{{ WSL_HOME_DIR }}/.ssh/config.d/vagrant_{{ VM_NAME }}"
         content: |
           Host {{ VM_NAME }}
               HostName {{ VM_IP }}

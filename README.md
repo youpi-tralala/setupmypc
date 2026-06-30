@@ -87,4 +87,6 @@ flowchart LR
 ```
 
 ## todo
-set vscode config
+set vscode config (sync settings?)
+install vscode on vm + x11
+include role hardening server

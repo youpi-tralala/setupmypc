@@ -1,11 +1,17 @@
 ---
-- name: Provision coding-vm
+- name: Provision vm
   hosts: all
   gather_facts: yes
   become: yes
   vars_files:
     - global_vars.yml
   tasks:
+# Set SSH_USER password
+    - name: Set SSH_USER password
+      ansible.builtin.user:
+        name: "{{ SSH_USER }}"
+        password: "{{ SSH_USER_PASSWORD | password_hash('sha512') }}"
+
 # Files and folders
     - name: create folders owned by SSH_USER
       ansible.builtin.file:
@@ -38,11 +44,37 @@
         group: "{{ SSH_USER }}"
         mode: '0644'
 
+# Set time and timezone
+    - name: Set timezone to Europe/Paris
+      ansible.builtin.command: timedatectl set-timezone "Europe/Paris"
+      
+    - name: Remove apt lock
+      ansible.builtin.file:
+        path: /var/lib/dpkg/lock-frontend
+        state: absent
+
+    - name: Instal Ntpdate package
+      ansible.builtin.apt:
+        name: ntpdate
+        state: present
+        update_cache: yes
+    
+    - name: fix time if broken
+      ansible.builtin.command: ntpdate -u pool.ntp.org
+        
 # First set of packages
     - name: Remove apt lock
       ansible.builtin.file:
         path: /var/lib/dpkg/lock-frontend
         state: absent
+    - name: Instal Ntpdate package
+      ansible.builtin.apt:
+        name: ntpdate
+        state: present
+        update_cache: yes
+    
+    - name: fix time if broken
+      ansible.builtin.command: ntpdate -u pool.ntp.org
 
     - name: Install packages (1/2)
       ansible.builtin.apt:
@@ -66,6 +98,7 @@
           - original-awk
           - podman
           - software-properties-common # Required for ansible
+          - tcpdump
           - terminator
           - tree
           - vim
@@ -73,9 +106,11 @@
           - whois
           - xauth
           - yq
+          - knockd
+          - iptables
 
         state: present
-        #update_cache: yes
+        update_cache: yes
 
     - name: Install Az-Cli
       ansible.builtin.shell: |
@@ -164,7 +199,7 @@
     - name: Update CA certificates
       ansible.builtin.command: update-ca-certificates
       
-# Add Terraform repo
+# Add HashiCorp repo
     - name: Add the HashiCorp GPG key
       ansible.builtin.shell: |
         wget -O- https://apt.releases.hashicorp.com/gpg | \
@@ -199,7 +234,7 @@
       ansible.builtin.apt:
         deb: /tmp/vscode.deb
         state: present
-        #update_cache: yes
+        update_cache: yes
 
 # Second set of packages
     - name: Install packages (2/2)
@@ -207,8 +242,9 @@
         name:
           - powershell
           - terraform
+          - vagrant
         state: present
-        #update_cache: yes
+        update_cache: yes
 
 # NeoVim 
     - name: Download Neovim AppImage (stable)
@@ -235,3 +271,32 @@
         src: config_files/init.lua
         dest: /etc/xdg/nvim/init.lua
         mode: '0644'
+
+# Copilot agent user
+    - name: Create copilot user
+      ansible.builtin.user:
+        name: "{{ COPILOT_USER }}"
+        shell: /bin/bash
+        groups: docker,sudo
+        append: yes
+        create_home: yes
+
+    - name: Create copilot .ssh directory
+      ansible.builtin.file:
+        path: /home/{{ COPILOT_USER }}/.ssh
+        state: directory
+        owner: "{{ COPILOT_USER }}"
+        group: "{{ COPILOT_USER }}"
+        mode: '0700'
+
+    - name: Authorize copilot public key
+      ansible.builtin.authorized_key:
+        user: "{{ COPILOT_USER }}"
+        key: "{{ COPILOT_USER_PUBLIC_KEY }}"
+        state: present
+
+    - name: Sudo sans mot de passe pour copilot
+      ansible.builtin.copy:
+        content: "{{ COPILOT_USER }} ALL=(ALL) NOPASSWD: ALL\n"
+        dest: /etc/sudoers.d/{{ COPILOT_USER }}
+        mode: '0440'

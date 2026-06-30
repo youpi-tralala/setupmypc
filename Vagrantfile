@@ -1,48 +1,81 @@
-# Get global variables
+# Variables globales chargées depuis global_vars.yml
 require 'yaml'
 GLOBAL_VARS = YAML.load_file(File.expand_path('../global_vars.yml', __FILE__))
 
-VM_NAME             = GLOBAL_VARS.fetch('VM_NAME')
-SSH_USER            = GLOBAL_VARS.fetch('SSH_USER')
-WINDOWS_SSH_DIR     = GLOBAL_VARS.fetch('WINDOWS_SSH_DIR')
+VM_NAME         = GLOBAL_VARS.fetch('VM_NAME')
+SSH_USER        = GLOBAL_VARS.fetch('SSH_USER')
+SSH_USER_UID    = GLOBAL_VARS.fetch('SSH_USER_UID')
+SSH_USER_GID    = GLOBAL_VARS.fetch('SSH_USER_GID')
+WINDOWS_SSH_DIR = GLOBAL_VARS.fetch('WINDOWS_SSH_DIR')
 WINDOWS_WORKING_DIR = GLOBAL_VARS.fetch('WINDOWS_WORKING_DIR')
-WINDOWS_C_DIR       = GLOBAL_VARS.fetch('WINDOWS_C_DIR')
-  
-  # Basic configuration
+VM_IP           = GLOBAL_VARS.fetch('VM_IP')
+
 Vagrant.configure('2') do |config|
+
+  # Box Debian 12 (Bookworm) — stable
   config.vm.box = 'debian/bookworm64'
   config.vm.hostname = VM_NAME
   config.vm.define VM_NAME
 
-  # resource allocation
+  # Ressources allouées à la VM
   config.vm.provider 'virtualbox' do |vb|
     vb.name   = VM_NAME
-    vb.memory = 8192
-    vb.cpus   = 4
+    vb.memory = 4096
+    vb.cpus   = 2
   end
-  # Host‑Only network
-  config.vm.network 'private_network', ip: '192.168.56.10'
 
-  # Synced folders
-  config.vm.synced_folder WINDOWS_C_DIR, "/mnt/c", owner: '1001', group: '1002', create: true, rsync:true
-  config.vm.synced_folder WINDOWS_WORKING_DIR, "/home/#{SSH_USER}/ops", owner: '1001', group: '1002', create: true, rsync:true
+  # Réseau host-only : accès SSH depuis le host sans NAT
+  config.vm.network 'private_network', ip: VM_IP
 
-  # Provisioning
+  # Dossier de travail principal — monté depuis Windows, édité dans la VM
+  # type virtualbox = bidirectionnel, fichiers physiquement sur Windows (NTFS)
+  # owner/group résolus depuis le username après vagrant reload (voir run.sh)
+  # dmode/fmode = permissions appliquées au montage (NTFS ne supporte pas les bits POSIX)
+  config.vm.synced_folder WINDOWS_WORKING_DIR, "/home/#{SSH_USER}/ops",
+    mount_options: [
+      "uid=#{SSH_USER_UID}",
+      "gid=#{SSH_USER_GID}",
+      "dmode=755",
+      "fmode=644"
+    ]
+
+  # Dossier .ssh — clés SSH stockées sur Windows, accessibles dans la VM
+  # fmode=600 requis par le client SSH (clé privée non lisible par les autres)
+  config.vm.synced_folder WINDOWS_SSH_DIR, "/home/#{SSH_USER}/.ssh",
+    mount_options: [
+      "uid=#{SSH_USER_UID}",
+      "gid=#{SSH_USER_GID}",
+      "dmode=700",
+      "fmode=600"
+    ]
+
+  # Provisioning shell — exécuté une seule fois à la création de la VM
   config.vm.provision 'shell', inline: <<-SHELL
     set -e
 
+    # Création du groupe sshusers si inexistant
     groupadd -f sshusers
-    if ! (cat /etc/passwd | grep #{SSH_USER}) > /dev/null ; then 
-    useradd -m -s /bin/bash -G sshusers,sudo #{SSH_USER} ; fi
 
+    # vboxsf est créé par les Guest Additions — on s'assure qu'il existe
+    groupadd -f vboxsf
+
+    # Création du user avec UID/GID fixes pour cohérence avec les montages VirtualBox
+    # vboxsf = groupe requis pour accéder aux dossiers partagés VirtualBox
+    if ! id #{SSH_USER} &>/dev/null; then
+      groupadd -g #{SSH_USER_GID} #{SSH_USER}
+      useradd -m -u #{SSH_USER_UID} -g #{SSH_USER_GID} -s /bin/bash -G sshusers,sudo,vboxsf #{SSH_USER}
+    fi
+
+    # Clé publique SSH autorisée pour connexion sans mot de passe
     mkdir -p /home/#{SSH_USER}/.ssh
     chmod 700 /home/#{SSH_USER}/.ssh
     echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFJ+DHkaXWSdamF2jik1rU/Qhj9jlH4sfJCnNkbHSvul y.boccuni@groupeonepoint.com" \
       > /home/#{SSH_USER}/.ssh/authorized_keys
     chmod 600 /home/#{SSH_USER}/.ssh/authorized_keys
 
-    sudo chown -R #{SSH_USER}:#{SSH_USER} /home/#{SSH_USER}
+    chown -R #{SSH_USER}:#{SSH_USER} /home/#{SSH_USER}
 
+    # Sudo sans mot de passe
     echo "#{SSH_USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/#{SSH_USER}
   SHELL
 

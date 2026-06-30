@@ -1,11 +1,14 @@
 VM_NAME: example_name
 # IP from VBox host-only adapter
 VM_IP: 192.168.00.00
-# Same name WSL <> vagrant VM
+# Same username WSL <> vagrant VM
 SSH_USER: example_user
-# in WSL
+SSH_USER_PASSWORD: "example_password"
+# WSL
+WSL_HOME_DIR: /home/example_user
+WINDOWS_HOME_DIR_IN_WSL: "/mnt/c/Users/ExampleUser"
 SSH_USER_PRIVATE_KEY_PATH: /home/example_user/.ssh/id_rsa
+# Windows
 WINDOWS_SSH_DIR: "C:\\Users\\ExampleUser\\.ssh"
 WINDOWS_WORKING_DIR: "C:\\Users\\ExampleUser\\Bureau\\example_dir"
 WINDOWS_C_DIR: "C:\\"
-WINDOWS_HOME_DIR_IN_WSL: "/mnt/c/Users/ExampleUser"
